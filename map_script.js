@@ -263,7 +263,7 @@ info.update = function (props) {
   }
   else if (mode == "stats" && granularity == "urb_units") {
     this._div.innerHTML = '<h4>Адм. район ' + (props ? props.rajon.toUpperCase() : 'неизвестен') + '</h4>' + '<div class="info_block">' +  (props ?
-      '<b>' + props.regname + '</b><br />' + props.percentage.toFixed(2) + '% от пешеходните пътища са в близост до парк'
+      '<b>' + props.regname + '</b><br />' + props.percentage.toFixed(2) + '% от пешеходните пътища са в близост до планина'
         : 'Задръжте върху административен район') + '</div>';
   }
 };
