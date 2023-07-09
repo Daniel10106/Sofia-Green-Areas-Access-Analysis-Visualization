@@ -7,6 +7,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let admLayer = null;
 let urbLayer = null; 
+let admMonLayer = null;
 let urbMonLayer = null;
 let greenAreasLayers = new Array(8);
 let mountainAreasLayers = new Array(10);
@@ -96,11 +97,17 @@ function highlightFeature(e) {
 }
 
 function resetHighlight(e) {
-  if (granularity === "adm_districts") {
+  if (granularity === "adm_districts" && greenAreaType == "parks") {
     admLayer.resetStyle(e.target);
   }
-  else if (granularity === "urb_units") {
+  else if (granularity === "adm_districts" && greenAreaType == "mountains") {
+    admMonLayer.resetStyle(e.target);
+  }
+  else if (granularity === "urb_units" && greenAreaType == "parks") {
     urbLayer.resetStyle(e.target);
+  }
+  else if (granularity === "urb_units" && greenAreaType == "mountains") {
+    urbMonLayer.resetStyle(e.target);
   }
   info.update();
 }
@@ -135,6 +142,12 @@ async function loadAdmGeoJson(geojson, style) {
   admLayer = L.geoJson(data, { style: style, onEachFeature: onEachFeature }).addTo(map);
 }
 
+async function loadAdmMonGeoJson(geojson, style) {
+  const response = await fetch(geojson);
+  const data = await response.json();
+  admMonLayer = L.geoJson(data, { style: style, onEachFeature: onEachFeature }).addTo(map);
+}
+
 async function loadUrbGeoJson(geojson, style) {
   const response = await fetch(geojson);
   const data = await response.json();
@@ -144,7 +157,7 @@ async function loadUrbGeoJson(geojson, style) {
 async function loadUrbMonGeoJson(geojson, style) {
   const response = await fetch(geojson);
   const data = await response.json();
-  urbLayer = L.geoJson(data, { style: style, onEachFeature: onEachFeature }).addTo(map);
+  urbMonLayer = L.geoJson(data, { style: style, onEachFeature: onEachFeature }).addTo(map);
 }
 
 let mode = "stats";
@@ -180,14 +193,15 @@ loadHeatmap();
 function loadParksGreenMap() {
   unloadStatAdm();
   unloadStatUrb();
+  unloadStatAdmMon();
   unloadStatUrbMon();
   unloadMountainAreas();
 
-  if (mode="stats"){
+  if (mode == "stats"){
     map.removeControl(info);
     map.removeControl(legend);
   }
-  mode="heatmap";
+  mode = "heatmap";
   greenIndex = 0;
   loadHeatmap();
 }
@@ -195,20 +209,22 @@ function loadParksGreenMap() {
 function loadMonsMap() {
   unloadStatAdm();
   unloadStatUrb();
+  unloadStatAdmMon();
   unloadStatUrbMon();
   unloadGreenAreas();
   
-  if (mode="stats"){
+  if (mode == "stats"){
     map.removeControl(info);
     map.removeControl(legend);
   }
-  mode="heatmap";
+  mode = "heatmap";
   monIndex = 0;
   loadMonHeatmap();
 }
 
 function loadStatAdmMap() {
   unloadStatUrb();
+  unloadStatAdmMon();
   unloadStatUrbMon();
   unloadGreenAreas();
   unloadMountainAreas();
@@ -218,11 +234,12 @@ function loadStatAdmMap() {
   greenAreaType = "parks";
   legend.addTo(map);
   info.addTo(map);
-  mode="stats";
+  mode = "stats";
 }
 
 function loadStatUrbMap() {
   unloadStatAdm();
+  unloadStatAdmMon();
   unloadStatUrbMon();
   unloadGreenAreas();
   unloadMountainAreas();
@@ -232,12 +249,28 @@ function loadStatUrbMap() {
   greenAreaType = "parks";
   legend.addTo(map);
   info.addTo(map);
-  mode="stats";
+  mode = "stats";
+}
+
+function loadStatAdmMonsMap() {
+  unloadStatAdm();
+  unloadStatUrb();
+  unloadStatUrbMon();
+  unloadGreenAreas();
+  unloadMountainAreas();
+
+  loadAdmMonGeoJson("adm_districts_mons_score.geojson", monsStyle);
+  granularity = "adm_districts";
+  greenAreaType = "mountains";
+  legend.addTo(map);
+  info.addTo(map);
+  mode = "stats";  
 }
 
 function loadStatUrbMonsMap() {
   unloadStatAdm();
   unloadStatUrb();
+  unloadStatAdmMon();
   unloadGreenAreas();
   unloadMountainAreas();
 
@@ -246,7 +279,7 @@ function loadStatUrbMonsMap() {
   greenAreaType = "mountains";
   legend.addTo(map);
   info.addTo(map);
-  mode="stats";
+  mode = "stats";
 }
 
 info.onAdd = function (map) {
@@ -258,12 +291,12 @@ info.onAdd = function (map) {
 info.update = function (props) {
   if (mode == "stats" && granularity == "adm_districts") {
     this._div.innerHTML = '<h4>Административен район</h4>' + '<div class="info_block">' + (props ?
-      '<b>' + props.obns_cyr + '</b><br />' + props.percentage.toFixed(2) + '% от пешеходните пътища са в близост до парк'
+      '<b>' + props.obns_cyr + '</b><br />' + props.percentage.toFixed(2) + '% от пешеходните пътища са в близост до ' + (greenAreaType == "parks" ? 'парк' : 'планина')
         : 'Задръжте върху административен район') + '</div>';
   }
   else if (mode == "stats" && granularity == "urb_units") {
     this._div.innerHTML = '<h4>Адм. район ' + (props ? props.rajon.toUpperCase() : 'неизвестен') + '</h4>' + '<div class="info_block">' +  (props ?
-      '<b>' + props.regname + '</b><br />' + props.percentage.toFixed(2) + '% от пешеходните пътища са в близост до планина'
+      '<b>' + props.regname + '</b><br />' + props.percentage.toFixed(2) + '% от пешеходните пътища са в близост до ' + (greenAreaType == "parks" ? 'парк' : 'планина')
         : 'Задръжте върху административен район') + '</div>';
   }
 };
@@ -333,6 +366,12 @@ function unloadStatAdm() {
 function unloadStatUrb() {
   if (urbLayer != null && map.hasLayer(urbLayer)) {
     map.removeLayer(urbLayer);
+  }
+}
+
+function unloadStatAdmMon() {
+  if (admMonLayer != null && map.hasLayer(admMonLayer)) {
+    map.removeLayer(admMonLayer);
   }
 }
 
