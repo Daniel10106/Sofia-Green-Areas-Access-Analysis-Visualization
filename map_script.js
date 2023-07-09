@@ -7,6 +7,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 let admLayer = null;
 let urbLayer = null; 
+let urbMonLayer = null;
 let greenAreasLayers = new Array(8);
 let mountainAreasLayers = new Array(10);
 let greenIndex = 0;
@@ -40,18 +41,38 @@ const rangeStyle = {
 }
 
 function getColor(d) {
-  return d < 20 ? '#BD0026' :
-  d < 25  ? '#E31A1C' :
-  d < 30  ? '#FC4E2A' :
-  d < 40  ? '#FD8D3C' :
-  d < 50   ? '#FDBD3C' :
-  d < 60   ? '#DDF27C' :
-  '#AAEDA0';
+  return d > 70 ? '#AAEDA0':
+  d > 50 ? '#DDF27C' :
+  d > 40 ? '#FDBD3C' :
+  d > 30 ? '#FD8D3C' :
+  d > 20 ? '#FC4E2A' :
+  d > 10 ? '#E31A1C' :
+  '#BD0026';
+}
+
+function getMonsColor(d) {
+  return d > 80 ? '#0E3747' :
+  d > 60 ? '#0F6E82' :
+  d > 50 ? '#3ABAAF' :
+  d > 30 ? '#9FE2BD' :
+  d > 10 ? '#DFEBD3' :
+  '#FFFFFF';
 }
 
 function admStyle(feature) {
   return {
     fillColor: getColor(feature.properties.percentage),
+    weight: 2,
+    opacity: 1,
+    color: 'white',
+    dashArray: '3',
+    fillOpacity: 0.7
+};
+}
+
+function monsStyle(feature) {
+  return {
+    fillColor: getMonsColor(feature.properties.percentage),
     weight: 2,
     opacity: 1,
     color: 'white',
@@ -120,8 +141,15 @@ async function loadUrbGeoJson(geojson, style) {
   urbLayer = L.geoJson(data, { style: style, onEachFeature: onEachFeature }).addTo(map);
 }
 
+async function loadUrbMonGeoJson(geojson, style) {
+  const response = await fetch(geojson);
+  const data = await response.json();
+  urbLayer = L.geoJson(data, { style: style, onEachFeature: onEachFeature }).addTo(map);
+}
+
 let mode = "stats";
 let granularity = "adm_districts";
+let greenAreaType = "parks";
 
 function loadHeatmap() {
   loadGeoJson("green_areas.geojson", greeneryStyle);
@@ -150,19 +178,14 @@ function loadMonHeatmap() {
 loadHeatmap();
 
 function loadParksGreenMap() {
-  if (admLayer != null && map.hasLayer(admLayer)) {
-    map.removeLayer(admLayer);
-  }
-  if (urbLayer != null && map.hasLayer(urbLayer)) {
-    map.removeLayer(urbLayer);
-  }
-  if (mountainAreasLayers[0] != null && map.hasLayer(mountainAreasLayers[0])) {
-    for (i = 0; i < 10; i++) {
-      map.removeLayer(mountainAreasLayers[i]);
-    }
-  }
+  unloadStatAdm();
+  unloadStatUrb();
+  unloadStatUrbMon();
+  unloadMountainAreas();
+
   if (mode="stats"){
     map.removeControl(info);
+    map.removeControl(legend);
   }
   mode="heatmap";
   greenIndex = 0;
@@ -170,19 +193,14 @@ function loadParksGreenMap() {
 }
 
 function loadMonsMap() {
-  if (admLayer != null && map.hasLayer(admLayer)) {
-    map.removeLayer(admLayer);
-  }
-  if (urbLayer != null && map.hasLayer(urbLayer)) {
-    map.removeLayer(urbLayer);
-  }
-  if (greenAreasLayers[0] != null && map.hasLayer(greenAreasLayers[0])) {
-    for (i = 0; i < 8; i++) {
-      map.removeLayer(greenAreasLayers[i]);
-    }
-  }
+  unloadStatAdm();
+  unloadStatUrb();
+  unloadStatUrbMon();
+  unloadGreenAreas();
+  
   if (mode="stats"){
     map.removeControl(info);
+    map.removeControl(legend);
   }
   mode="heatmap";
   monIndex = 0;
@@ -190,46 +208,44 @@ function loadMonsMap() {
 }
 
 function loadStatAdmMap() {
-  if (urbLayer != null && map.hasLayer(urbLayer)) {
-    map.removeLayer(urbLayer);
-  }
-  if (greenAreasLayers[0] != null && map.hasLayer(greenAreasLayers[0])) {
-    for (i = 0; i < 8; i++) {
-      map.removeLayer(greenAreasLayers[i]);
-    }
-  }
-  if (mountainAreasLayers[0] != null && map.hasLayer(mountainAreasLayers[0])) {
-    for (i = 0; i < 10; i++) {
-      map.removeLayer(mountainAreasLayers[i]);
-    }
-  }
+  unloadStatUrb();
+  unloadStatUrbMon();
+  unloadGreenAreas();
+  unloadMountainAreas();
+
   loadAdmGeoJson("adm_regions_score.geojson", admStyle);
   granularity = "adm_districts";
-  if (mode == "heatmap") {
-    info.addTo(map);
-  }
+  greenAreaType = "parks";
+  legend.addTo(map);
+  info.addTo(map);
   mode="stats";
 }
 
 function loadStatUrbMap() {
-  if (admLayer != null && map.hasLayer(admLayer)) {
-    map.removeLayer(admLayer);
-  }
-  if (greenAreasLayers[0] != null && map.hasLayer(greenAreasLayers[0])) {
-    for (i = 0; i < 8; i++) {
-      map.removeLayer(greenAreasLayers[i]);
-    }
-  }
-  if (mountainAreasLayers[0] != null && map.hasLayer(mountainAreasLayers[0])) {
-    for (i = 0; i < 10; i++) {
-      map.removeLayer(mountainAreasLayers[i]);
-    }
-  }
+  unloadStatAdm();
+  unloadStatUrbMon();
+  unloadGreenAreas();
+  unloadMountainAreas();
+  
   loadUrbGeoJson("urb_units_score.geojson", admStyle);
   granularity = "urb_units";
-  if (mode == "heatmap") {
-    info.addTo(map);
-  }
+  greenAreaType = "parks";
+  legend.addTo(map);
+  info.addTo(map);
+  mode="stats";
+}
+
+function loadStatUrbMonsMap() {
+  unloadStatAdm();
+  unloadStatUrb();
+  unloadGreenAreas();
+  unloadMountainAreas();
+
+  loadUrbMonGeoJson("urb_units_mons_score.geojson", monsStyle);
+  granularity = "urb_units";
+  greenAreaType = "mountains";
+  legend.addTo(map);
+  info.addTo(map);
   mode="stats";
 }
 
@@ -256,19 +272,30 @@ var legend = L.control({position: 'bottomright'});
 
 legend.onAdd = function (map) {
     var div = L.DomUtil.create('div', 'info legend'),
-        grades = [60, 50, 40, 30, 25, 15],
+        grades = [100, 70, 50, 40, 30, 20, 10],
+        monGrades = [100, 80, 60, 50, 30, 10],
         labels = [];
 
-    for (var i = 0; i < grades.length; i++) {
+    if (greenAreaType == "parks") {
+      for (var i = 0; i < grades.length; i++) {
+          div.innerHTML +=
+              '<i style="background:' + getColor(grades[i]) + '"></i> ' +
+              (grades[i]) + (grades[i + 1] ? '&ndash;' + (grades[i + 1]) + '<br>' : '-');
+      }
+    }
+
+    else if (greenAreaType == "mountains") {
+      for (var i = 0; i < monGrades.length; i++) {
         div.innerHTML +=
-            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
-            (grades[i]+10) + (grades[i + 1] ? '&ndash;' + (grades[i + 1]+10) + '<br>' : '-');
+            '<i style="background:' + getMonsColor(monGrades[i]) + '"></i> ' +
+            (monGrades[i]) + (monGrades[i + 1] ? '&ndash;' + (monGrades[i + 1]) + '<br>' : '-');
+      }
     }
 
     return div;
 };
 
-legend.addTo(map);
+
 
 var popup = L.popup();
 
@@ -281,3 +308,36 @@ function onMapClick(e) {
 
 map.on('click', onMapClick);
 
+function unloadGreenAreas() {
+  if (greenAreasLayers[0] != null && map.hasLayer(greenAreasLayers[0])) {
+    for (i = 0; i < 8; i++) {
+      map.removeLayer(greenAreasLayers[i]);
+    }
+  }
+}
+
+function unloadMountainAreas() {
+  if (mountainAreasLayers[0] != null && map.hasLayer(mountainAreasLayers[0])) {
+    for (i = 0; i < 10; i++) {
+      map.removeLayer(mountainAreasLayers[i]);
+    }
+  }
+}
+
+function unloadStatAdm() {
+  if (admLayer != null && map.hasLayer(admLayer)) {
+    map.removeLayer(admLayer);
+  }
+}
+
+function unloadStatUrb() {
+  if (urbLayer != null && map.hasLayer(urbLayer)) {
+    map.removeLayer(urbLayer);
+  }
+}
+
+function unloadStatUrbMon() {
+  if (urbMonLayer != null && map.hasLayer(urbMonLayer)) {
+    map.removeLayer(urbMonLayer);
+  }
+}
