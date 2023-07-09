@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Зелени площи и достъп на жителите на София до тях (студентски проект)</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Overpass">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+  crossorigin=""></script>
+  <title>Document</title>
+</head>
+<body>
+  <div id = "title-switch">
+  <h1>Зелени площи и достъп на жителите на София до тях (студентски проект)</h1>
+  <!-- <h2>Топлинна карта</h2> -->
+  <!-- <label class="switch">
+    <input type="checkbox" onclick="switchMode()">
+    <span class="slider round"></span>
+  </label>
+  <label id="granSwitch" class="switch">
+    <input type="checkbox" onclick="switchGranularity()">
+    <span class="slider round"></span>
+  </label> -->
+  <!-- <h2>Статистика</h2> -->
+  </div>
+  <div id = "body">
+   <div id="map"></div>
+   <script src="map_script.js"></script>
+   <section class="radio-section">
+    <div class="radio-list">
+      <h1>Изберете визуализация:</h1>
+      <div class="radio-item"><input name="radio" id="radio1" checked type="radio" onclick="loadParksGreenMap()"><label for="radio1">ПАРКОВЕ И ГРАДИНИ (ТОПЛИННА КАРТА)</label></div>
+      <div class="radio-item"><input name="radio" id="radio2" type="radio" onclick="loadMonsMap()"><label for="radio2">ПЛАНИНИ (ТОПЛИННА КАРТА)</label></div>
+      <div class="radio-item"><input name="radio" id="radio3" type="radio" onclick="loadStatAdmMap()"><label for="radio3">СТАТ. ЗА ЗЕЛЕНИ ПЛОЩИ ПО АДМ. РАЙОНИ</label></div>
+      <div class="radio-item"><input name="radio" id="radio4" type="radio" onclick="loadStatUrbMap()"><label for="radio4">СТАТ. ЗА ЗЕЛЕНИ ПЛОЩИ ПО ГРАД. ЕДИНИЦИ</label></div>
+    </div>
+  </section>
+  </div>
+</body>
+</html>
